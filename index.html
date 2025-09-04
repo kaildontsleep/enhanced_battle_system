@@ -1,0 +1,1787 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>寻道大陆 - 联盟战力展示系统</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            animation: fadeInDown 0.5s;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .admin-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.9);
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #333;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        .admin-status .admin-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+
+        .connection-status.connected {
+            background: #4caf50;
+            color: white;
+        }
+
+        .connection-status.disconnected {
+            background: #f44336;
+            color: white;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 10px 20px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .nav-btn.active {
+            background: #ffd700;
+            color: #333;
+        }
+
+        .nav-btn .badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff4757;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .filter-section {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            color: #555;
+            min-width: 80px;
+        }
+
+        select {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            background: white;
+            min-width: 120px;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            padding-top: 15px;
+            border-top: 1px solid #f0f0f0;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            background: #f8f9fa;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .stat-item .icon {
+            font-size: 16px;
+        }
+
+        .stat-item .label {
+            color: #666;
+        }
+
+        .stat-item .value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .stat-item.green {
+            background: linear-gradient(135deg, #a8e6cf 0%, #dcedc1 100%);
+        }
+
+        .stat-item.orange {
+            background: linear-gradient(135deg, #ffd3a5 0%, #fd6585 100%);
+        }
+
+        .stat-item.blue {
+            background: linear-gradient(135deg, #c2e9fb 0%, #a1c4fd 100%);
+        }
+
+        .main-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            animation: fadeInUp 0.5s;
+        }
+
+        .mountain-section {
+            margin-bottom: 30px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .section-header h2 {
+            font-size: 18px;
+            color: #333;
+        }
+
+        .section-header .count {
+            background: #667eea;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+
+        .alliance-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .alliance-card {
+            border-radius: 10px;
+            padding: 15px;
+            position: relative;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .alliance-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .alliance-card.type-green {
+            background: linear-gradient(135deg, #a8e6cf 0%, #dcedc1 100%);
+        }
+
+        .alliance-card.type-orange {
+            background: linear-gradient(135deg, #ffd3a5 0%, #fd6585 100%);
+        }
+
+        .alliance-card.type-blue {
+            background: linear-gradient(135deg, #c2e9fb 0%, #a1c4fd 100%);
+        }
+
+        .alliance-card.pending {
+            opacity: 0.7;
+            border: 2px dashed #ffa500;
+        }
+
+        .alliance-card.pending::before {
+            content: "待审核";
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ffa500;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .alliance-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .alliance-total {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .member-list {
+            font-size: 14px;
+            color: #555;
+        }
+
+        .member-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .member-item:last-child {
+            border-bottom: none;
+        }
+
+        .member-name {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .member-power {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .edit-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.8);
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .edit-btn:hover {
+            background: white;
+            transform: scale(1.1);
+        }
+
+        .form-page {
+            display: none;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            margin: 0 auto;
+            animation: fadeInUp 0.5s;
+        }
+
+        .form-page.active {
+            display: block;
+        }
+
+        .form-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .form-header h2 {
+            font-size: 24px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .form-info ul {
+            margin: 10px 0 0 20px;
+        }
+
+        .form-info li {
+            margin: 5px 0;
+        }
+
+        .member-inputs {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .member-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .member-input-group input {
+            flex: 1;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .delete-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .delete-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.3);
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 15px;
+            background: #f0f0f0;
+            color: #666;
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+            font-size: 14px;
+        }
+
+        .back-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .login-box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 400px;
+            max-width: 90%;
+        }
+
+        .login-box h3 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .login-form .form-group {
+            margin-bottom: 15px;
+        }
+
+        .login-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .login-buttons button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .login-btn {
+            background: #667eea;
+            color: white;
+        }
+
+        .cancel-btn {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .review-item {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .review-item.update {
+            border-left: 4px solid #ffa500;
+        }
+
+        .review-item.new {
+            border-left: 4px solid #28a745;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .review-type {
+            background: #ffa500;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .review-type.new {
+            background: #28a745;
+        }
+
+        .review-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .review-field {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+
+        .review-field label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .review-field .value {
+            font-size: 14px;
+            color: #333;
+        }
+
+        .review-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .approve-btn, .reject-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .approve-btn {
+            background: #28a745;
+            color: white;
+        }
+
+        .reject-btn {
+            background: #dc3545;
+            color: white;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4caf50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: none;
+            animation: slideIn 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        .toast.error {
+            background: #f44336;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+            }
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .loading::after {
+            content: "";
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="connection-status" id="connectionStatus">
+            连接中...
+        </div>
+
+        <div class="admin-status" id="adminStatus">
+            <span id="adminInfo">未登录</span>
+            <button class="admin-btn" id="adminBtn" onclick="toggleAdmin()">管理员登录</button>
+        </div>
+
+        <div class="header">
+            <h1>⚔️ 寻道大陆——联盟战力展示与外交系统 ⚔️</h1>
+            <p>实时更新各山头联盟战力数据，助力联盟外交决策</p>
+        </div>
+
+        <div class="nav-buttons">
+            <button class="nav-btn active" onclick="showPage('main')">联盟数据展示</button>
+            <button class="nav-btn" onclick="showPage('add')">提交新数据</button>
+            <button class="nav-btn" onclick="showPage('update')">更新已有数据</button>
+            <button class="nav-btn hidden" id="reviewBtn" onclick="showPage('review')">
+                数据审核
+                <span class="badge" id="reviewBadge">0</span>
+            </button>
+        </div>
+
+        <!-- 主页面 -->
+        <div id="mainPage" class="page">
+            <div class="filter-section">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label>筛选山头：</label>
+                        <select id="mountainFilter" onchange="filterData()">
+                            <option value="all">全部山头</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>联盟类型：</label>
+                        <select id="typeFilter" onchange="filterData()">
+                            <option value="all">全部类型</option>
+                            <option value="green">联盟（绿色）</option>
+                            <option value="orange">敌对（橙色）</option>
+                            <option value="blue">中立（蓝色）</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="stats-row" id="statsRow">
+                    <!-- 统计信息将动态插入这里 -->
+                </div>
+            </div>
+
+            <div class="main-content" id="dataDisplay">
+                <div class="loading">加载数据中...</div>
+            </div>
+        </div>
+
+        <!-- 新增数据页面 -->
+        <div id="addPage" class="form-page">
+            <button class="back-btn" onclick="showPage('main')">← 返回主页</button>
+            
+            <div class="form-header">
+                <h2>📝 提交联盟数据</h2>
+            </div>
+
+            <div class="form-info">
+                <strong>填写说明：</strong>
+                <ul>
+                    <li>山头名称：如"黄龙山9"，请保持命名统一</li>
+                    <li>联盟/敌对/中立：根据外交关系选择</li>
+                    <li>战力单位为万亿，可填写小数，如：33.88</li>
+                    <li><strong>注意：提交后需要管理员审核才会显示</strong></li>
+                </ul>
+            </div>
+
+            <form id="addForm">
+                <div class="form-group">
+                    <label>山头名称 *</label>
+                    <input type="text" name="mountain" placeholder="请输入山头名称，如：黄龙山9" required>
+                </div>
+
+                <div class="form-group">
+                    <label>联盟名称 *</label>
+                    <input type="text" name="alliance" placeholder="请输入联盟名称" required>
+                </div>
+
+                <div class="form-group">
+                    <label>联盟关系 *</label>
+                    <select name="relation" required>
+                        <option value="">请选择联盟关系</option>
+                        <option value="green">联盟（绿色）</option>
+                        <option value="orange">敌对（橙色）</option>
+                        <option value="blue">中立（蓝色）</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>联盟总战力（万亿）*</label>
+                    <input type="number" name="totalPower" step="0.01" placeholder="例如：33.88" required>
+                </div>
+
+                <div class="form-group">
+                    <label>车头信息（选填）</label>
+                    <div class="member-inputs">
+                        <div class="member-input-group">
+                            <input type="text" name="member1Name" placeholder="车头1玩家名称">
+                            <input type="number" name="member1Power" step="0.01" placeholder="战力（万亿）">
+                        </div>
+                        <div class="member-input-group">
+                            <input type="text" name="member2Name" placeholder="车头2玩家名称">
+                            <input type="number" name="member2Power" step="0.01" placeholder="战力（万亿）">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">提交数据</button>
+            </form>
+        </div>
+
+        <!-- 更新数据页面 -->
+        <div id="updatePage" class="form-page">
+            <button class="back-btn" onclick="showPage('main')">← 返回主页</button>
+            
+            <div class="form-header">
+                <h2>🔄 更新联盟数据</h2>
+            </div>
+
+            <div class="form-info">
+                <strong>说明：</strong>此功能用于更新已存在的联盟数据。选择山头和联盟后，可以更新联盟关系、总战力和车头信息。
+                <br><strong>注意：修改后需要管理员审核才会生效</strong>
+            </div>
+
+            <form id="updateForm">
+                <div class="form-group">
+                    <label>选择山头 *</label>
+                    <select name="mountain" id="updateMountain" required onchange="loadAlliances()">
+                        <option value="">请选择山头</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>选择联盟 *</label>
+                    <select name="alliance" id="updateAlliance" required onchange="loadAllianceData()">
+                        <option value="">请先选择山头</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>联盟关系 *</label>
+                    <select name="relation" id="updateRelation" required>
+                        <option value="">请选择联盟关系</option>
+                        <option value="green">联盟（绿色）</option>
+                        <option value="orange">敌对（橙色）</option>
+                        <option value="blue">中立（蓝色）</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>联盟总战力（万亿）*</label>
+                    <input type="number" id="updateTotalPower" name="totalPower" step="0.01" placeholder="例如：33.88" required>
+                </div>
+
+                <div class="form-group">
+                    <label>车头信息（选填）</label>
+                    <div class="member-inputs">
+                        <div class="member-input-group">
+                            <input type="text" id="updateMember1Name" name="member1Name" placeholder="车头1玩家名称">
+                            <input type="number" id="updateMember1Power" name="member1Power" step="0.01" placeholder="战力（万亿）">
+                        </div>
+                        <div class="member-input-group">
+                            <input type="text" id="updateMember2Name" name="member2Name" placeholder="车头2玩家名称">
+                            <input type="number" id="updateMember2Power" name="member2Power" step="0.01" placeholder="战力（万亿）">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">提交修改</button>
+                <button type="button" class="delete-btn" onclick="deleteAlliance()">删除此联盟</button>
+            </form>
+        </div>
+
+        <!-- 审核页面 -->
+        <div id="reviewPage" class="form-page">
+            <button class="back-btn" onclick="showPage('main')">← 返回主页</button>
+            
+            <div class="form-header">
+                <h2>🔍 数据审核管理</h2>
+            </div>
+
+            <div id="reviewList">
+                <div class="loading">加载审核数据中...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 登录框 -->
+    <div class="login-overlay hidden" id="loginOverlay">
+        <div class="login-box">
+            <h3>🔐 管理员登录</h3>
+            <form class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" name="username" placeholder="请输入用户名" required>
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" name="password" placeholder="请输入密码" required>
+                </div>
+                <div class="login-buttons">
+                    <button type="button" class="cancel-btn" onclick="hideLogin()">取消</button>
+                    <button type="submit" class="login-btn">登录</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Firebase 配置 - 请替换为你的配置
+        const firebaseConfig = {
+        apiKey: "AIzaSyAEG2wLSKT39ESNuJOPo81HSIysLoHY6yE",
+        authDomain: "xundao-alliance.firebaseapp.com",
+        databaseURL: "https://xundao-alliance-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "xundao-alliance",
+        storageBucket: "xundao-alliance.firebasestorage.app",
+        messagingSenderId: "120992896477",
+        appId: "1:120992896477:web:871586845b512b24c3d234",
+        measurementId: "G-7VP8EMP17D"
+        };
+
+        // 初始化 Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // 全局变量
+        let allianceData = [];
+        let pendingData = [];
+        let isAdmin = false;
+        let connectionStatus = false;
+
+        // 默认管理员账户
+        const ADMIN_USERNAME = 'admin';
+        const ADMIN_PASSWORD = 'admin123';
+
+        // 连接状态监听
+        function initConnectionMonitoring() {
+            const connectedRef = database.ref('.info/connected');
+            connectedRef.on('value', (snapshot) => {
+                connectionStatus = snapshot.val() === true;
+                updateConnectionStatus();
+            });
+        }
+
+        // 更新连接状态显示
+        function updateConnectionStatus() {
+            const statusEl = document.getElementById('connectionStatus');
+            if (connectionStatus) {
+                statusEl.textContent = '● 已连接';
+                statusEl.className = 'connection-status connected';
+            } else {
+                statusEl.textContent = '● 连接断开';
+                statusEl.className = 'connection-status disconnected';
+            }
+        }
+
+        // 初始化数据监听
+        function initDataListeners() {
+            // 监听联盟数据
+            database.ref('alliances').on('value', (snapshot) => {
+                const data = snapshot.val();
+                allianceData = data ? Object.values(data) : [];
+                if (document.getElementById('mainPage').style.display !== 'none') {
+                    updateMountainFilters();
+                    filterData();
+                }
+            });
+
+            // 监听待审核数据
+            database.ref('pending').on('value', (snapshot) => {
+                const data = snapshot.val();
+                pendingData = data ? Object.values(data).map((item, index) => ({
+                    ...item,
+                    firebaseKey: Object.keys(data)[index]
+                })) : [];
+                updateAdminUI();
+                if (document.getElementById('reviewPage').classList.contains('active')) {
+                    loadReviewData();
+                }
+            });
+        }
+
+        // 保存联盟数据到Firebase
+        async function saveAllianceData(data, isUpdate = false, originalKey = null) {
+            try {
+                if (isUpdate && originalKey) {
+                    await database.ref(`alliances/${originalKey}`).set(data);
+                } else {
+                    await database.ref('alliances').push(data);
+                }
+                return true;
+            } catch (error) {
+                console.error('保存联盟数据失败:', error);
+                showToast('保存数据失败，请检查网络连接', 'error');
+                return false;
+            }
+        }
+
+        // 保存待审核数据到Firebase
+        async function savePendingData(data) {
+            try {
+                await database.ref('pending').push(data);
+                return true;
+            } catch (error) {
+                console.error('保存待审核数据失败:', error);
+                showToast('提交数据失败，请检查网络连接', 'error');
+                return false;
+            }
+        }
+
+        // 删除联盟数据
+        async function deleteAllianceData(mountain, alliance) {
+            try {
+                const snapshot = await database.ref('alliances').once('value');
+                const alliances = snapshot.val() || {};
+                
+                for (const [key, data] of Object.entries(alliances)) {
+                    if (data.mountain === mountain && data.alliance === alliance) {
+                        await database.ref(`alliances/${key}`).remove();
+                        return true;
+                    }
+                }
+                return false;
+            } catch (error) {
+                console.error('删除联盟数据失败:', error);
+                showToast('删除数据失败，请检查网络连接', 'error');
+                return false;
+            }
+        }
+
+        // 删除待审核数据
+        async function deletePendingData(firebaseKey) {
+            try {
+                await database.ref(`pending/${firebaseKey}`).remove();
+                return true;
+            } catch (error) {
+                console.error('删除待审核数据失败:', error);
+                return false;
+            }
+        }
+
+        // 更新管理员UI
+        function updateAdminUI() {
+            const adminInfo = document.getElementById('adminInfo');
+            const adminBtn = document.getElementById('adminBtn');
+            const reviewBtn = document.getElementById('reviewBtn');
+            const reviewBadge = document.getElementById('reviewBadge');
+            
+            if (isAdmin) {
+                adminInfo.textContent = '管理员已登录';
+                adminBtn.textContent = '退出登录';
+                reviewBtn.classList.remove('hidden');
+                reviewBadge.textContent = pendingData.length;
+                reviewBadge.style.display = pendingData.length > 0 ? 'flex' : 'none';
+            } else {
+                adminInfo.textContent = '未登录';
+                adminBtn.textContent = '管理员登录';
+                reviewBtn.classList.add('hidden');
+            }
+        }
+
+        // 切换管理员状态
+        function toggleAdmin() {
+            if (isAdmin) {
+                isAdmin = false;
+                sessionStorage.removeItem('isAdmin');
+                updateAdminUI();
+                showToast('已退出管理员模式');
+                showPage('main');
+            } else {
+                document.getElementById('loginOverlay').classList.remove('hidden');
+            }
+        }
+
+        // 隐藏登录框
+        function hideLogin() {
+            document.getElementById('loginOverlay').classList.add('hidden');
+            document.getElementById('loginForm').reset();
+        }
+
+        // 处理登录
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const username = formData.get('username');
+            const password = formData.get('password');
+            
+            if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+                isAdmin = true;
+                sessionStorage.setItem('isAdmin', 'true');
+                updateAdminUI();
+                hideLogin();
+                showToast('登录成功！');
+            } else {
+                showToast('用户名或密码错误', 'error');
+            }
+        });
+
+        // 山头归类函数
+        function getMountainCategory(mountainName) {
+            return mountainName.replace(/\d+$/, '');
+        }
+
+        // 获取山头类别列表
+        function getMountainCategories() {
+            const categories = [...new Set(allianceData.map(item => getMountainCategory(item.mountain)))];
+            return categories.sort();
+        }
+
+        // 显示页面
+        function showPage(page) {
+            document.getElementById('mainPage').style.display = 'none';
+            document.getElementById('addPage').classList.remove('active');
+            document.getElementById('updatePage').classList.remove('active');
+            document.getElementById('reviewPage').classList.remove('active');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            
+            switch(page) {
+                case 'main':
+                    document.getElementById('mainPage').style.display = 'block';
+                    document.querySelectorAll('.nav-btn')[0].classList.add('active');
+                    updateMountainFilters();
+                    filterData();
+                    break;
+                case 'add':
+                    document.getElementById('addPage').classList.add('active');
+                    document.querySelectorAll('.nav-btn')[1].classList.add('active');
+                    break;
+                case 'update':
+                    document.getElementById('updatePage').classList.add('active');
+                    document.querySelectorAll('.nav-btn')[2].classList.add('active');
+                    loadMountains();
+                    break;
+                case 'review':
+                    if (isAdmin) {
+                        document.getElementById('reviewPage').classList.add('active');
+                        document.getElementById('reviewBtn').classList.add('active');
+                        loadReviewData();
+                    } else {
+                        showToast('需要管理员权限', 'error');
+                        showPage('main');
+                    }
+                    break;
+            }
+        }
+
+        // 更新山头筛选器
+        function updateMountainFilters() {
+            const categories = getMountainCategories();
+            const select = document.getElementById('mountainFilter');
+            
+            const currentValue = select.value;
+            select.innerHTML = '<option value="all">全部山头</option>';
+            
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                select.appendChild(option);
+            });
+            
+            if (currentValue && select.querySelector(`option[value="${currentValue}"]`)) {
+                select.value = currentValue;
+            }
+        }
+
+        // 筛选数据
+        function filterData() {
+            const selectedMountain = document.getElementById('mountainFilter').value;
+            const selectedType = document.getElementById('typeFilter').value;
+            
+            renderData(selectedMountain, selectedType);
+        }
+
+        // 更新统计信息
+        function updateStats(filteredData) {
+            const statsContainer = document.getElementById('statsRow');
+            
+            const totalCount = filteredData.length;
+            const greenCount = filteredData.filter(item => item.relation === 'green').length;
+            const orangeCount = filteredData.filter(item => item.relation === 'orange').length;
+            const blueCount = filteredData.filter(item => item.relation === 'blue').length;
+            
+            const totalPower = filteredData.reduce((sum, item) => sum + item.totalPower, 0);
+            
+            let html = `
+                <div class="stat-item">
+                    <span class="icon">📊</span>
+                    <span class="label">总数：</span>
+                    <span class="value">${totalCount}个联盟</span>
+                </div>
+                <div class="stat-item">
+                    <span class="icon">⚡</span>
+                    <span class="label">总战力：</span>
+                    <span class="value">${totalPower.toFixed(2)}万亿</span>
+                </div>
+            `;
+            
+            if (greenCount > 0) {
+                html += `
+                    <div class="stat-item green">
+                        <span class="icon">🤝</span>
+                        <span class="label">联盟：</span>
+                        <span class="value">${greenCount}个</span>
+                    </div>
+                `;
+            }
+            
+            if (orangeCount > 0) {
+                html += `
+                    <div class="stat-item orange">
+                        <span class="icon">⚔️</span>
+                        <span class="label">敌对：</span>
+                        <span class="value">${orangeCount}个</span>
+                    </div>
+                `;
+            }
+            
+            if (blueCount > 0) {
+                html += `
+                    <div class="stat-item blue">
+                        <span class="icon">🕊️</span>
+                        <span class="label">中立：</span>
+                        <span class="value">${blueCount}个</span>
+                    </div>
+                `;
+            }
+            
+            statsContainer.innerHTML = html;
+        }
+
+        // 渲染数据
+        function renderData(filterMountain = 'all', filterType = 'all') {
+            const container = document.getElementById('dataDisplay');
+            
+            let filteredData = allianceData;
+            
+            if (filterMountain !== 'all') {
+                filteredData = filteredData.filter(item => 
+                    getMountainCategory(item.mountain) === filterMountain
+                );
+            }
+            
+            if (filterType !== 'all') {
+                filteredData = filteredData.filter(item => item.relation === filterType);
+            }
+            
+            updateStats(filteredData);
+            
+            const groupedData = {};
+            filteredData.forEach(item => {
+                if (!groupedData[item.mountain]) {
+                    groupedData[item.mountain] = [];
+                }
+                groupedData[item.mountain].push(item);
+            });
+            
+            if (Object.keys(groupedData).length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>暂无数据</h3>
+                        <p>请点击"提交新数据"添加联盟信息</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            Object.keys(groupedData).sort().forEach(mountain => {
+                html += `
+                    <div class="mountain-section">
+                        <div class="section-header">
+                            <h2>🏔 ${mountain}</h2>
+                            <span class="count">${groupedData[mountain].length}个联盟</span>
+                        </div>
+                        <div class="alliance-grid">
+                `;
+                
+                groupedData[mountain].forEach(alliance => {
+                    const typeClass = `type-${alliance.relation}`;
+                    const relationText = alliance.relation === 'green' ? '联盟' : 
+                                        alliance.relation === 'orange' ? '敌对' : '中立';
+                    
+                    html += `
+                        <div class="alliance-card ${typeClass}">
+                            <button class="edit-btn" onclick="editAlliance('${mountain}', '${alliance.alliance}')">✏️</button>
+                            <div class="alliance-name">🏛️ ${relationText} ${alliance.alliance}</div>
+                            <div class="alliance-total">总战力: ${alliance.totalPower}万亿</div>
+                            <div class="member-list">
+                    `;
+                    
+                    if (alliance.members && alliance.members.length > 0) {
+                        alliance.members.forEach(member => {
+                            html += `
+                                <div class="member-item">
+                                    <span class="member-name">👤 ${member.name}</span>
+                                    <span class="member-power">${member.power}万亿</span>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        html += `<div style="color: #999; font-size: 13px;">暂无车头信息</div>`;
+                    }
+                    
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // 编辑联盟
+        function editAlliance(mountain, alliance) {
+            showPage('update');
+            setTimeout(() => {
+                document.getElementById('updateMountain').value = mountain;
+                loadAlliances();
+                setTimeout(() => {
+                    document.getElementById('updateAlliance').value = alliance;
+                    loadAllianceData();
+                }, 100);
+            }, 100);
+        }
+
+        // 删除联盟
+        async function deleteAlliance() {
+            const mountain = document.getElementById('updateMountain').value;
+            const alliance = document.getElementById('updateAlliance').value;
+            
+            if (!mountain || !alliance) {
+                showToast('请先选择要删除的联盟', 'error');
+                return;
+            }
+            
+            if (!confirm(`确认删除 ${mountain} 的 ${alliance} 联盟吗？`)) {
+                return;
+            }
+            
+            if (isAdmin) {
+                const success = await deleteAllianceData(mountain, alliance);
+                if (success) {
+                    showToast('联盟删除成功！');
+                    showPage('main');
+                }
+            } else {
+                const deleteRequest = {
+                    type: 'delete',
+                    mountain: mountain,
+                    alliance: alliance,
+                    timestamp: new Date().toISOString()
+                };
+                
+                const success = await savePendingData(deleteRequest);
+                if (success) {
+                    showToast('删除申请已提交，等待管理员审核');
+                    showPage('main');
+                }
+            }
+        }
+
+        // 加载山头列表
+        function loadMountains() {
+            const mountains = [...new Set(allianceData.map(item => item.mountain))].sort();
+            const select = document.getElementById('updateMountain');
+            select.innerHTML = '<option value="">请选择山头</option>';
+            mountains.forEach(mountain => {
+                select.innerHTML += `<option value="${mountain}">${mountain}</option>`;
+            });
+        }
+
+        // 加载联盟列表
+        function loadAlliances() {
+            const mountain = document.getElementById('updateMountain').value;
+            const select = document.getElementById('updateAlliance');
+            
+            if (!mountain) {
+                select.innerHTML = '<option value="">请先选择山头</option>';
+                return;
+            }
+            
+            const alliances = allianceData
+                .filter(item => item.mountain === mountain)
+                .map(item => item.alliance);
+            
+            select.innerHTML = '<option value="">请选择联盟</option>';
+            alliances.forEach(alliance => {
+                select.innerHTML += `<option value="${alliance}">${alliance}</option>`;
+            });
+        }
+
+        // 加载联盟数据
+        function loadAllianceData() {
+            const mountain = document.getElementById('updateMountain').value;
+            const alliance = document.getElementById('updateAlliance').value;
+            
+            if (!mountain || !alliance) return;
+            
+            const data = allianceData.find(item => 
+                item.mountain === mountain && item.alliance === alliance
+            );
+            
+            if (data) {
+                document.getElementById('updateRelation').value = data.relation;
+                document.getElementById('updateTotalPower').value = data.totalPower;
+                
+                document.getElementById('updateMember1Name').value = data.members[0]?.name || '';
+                document.getElementById('updateMember1Power').value = data.members[0]?.power || '';
+                document.getElementById('updateMember2Name').value = data.members[1]?.name || '';
+                document.getElementById('updateMember2Power').value = data.members[1]?.power || '';
+            }
+        }
+
+        // 加载审核数据
+        function loadReviewData() {
+            const container = document.getElementById('reviewList');
+            
+            if (pendingData.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>暂无待审核数据</h3>
+                        <p>所有提交的数据都已处理完毕</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            pendingData.forEach((item, index) => {
+                const isUpdate = item.type === 'update';
+                const isDelete = item.type === 'delete';
+                const typeText = isDelete ? '删除申请' : isUpdate ? '数据更新' : '新增数据';
+                const typeClass = isDelete ? 'delete' : isUpdate ? 'update' : 'new';
+                
+                html += `
+                    <div class="review-item ${typeClass}">
+                        <div class="review-header">
+                            <span class="review-type ${typeClass}">${typeText}</span>
+                            <span style="color: #666; font-size: 12px;">
+                                ${new Date(item.timestamp).toLocaleString()}
+                            </span>
+                        </div>
+                `;
+                
+                if (isDelete) {
+                    html += `
+                        <div class="review-content">
+                            <div class="review-field">
+                                <label>山头</label>
+                                <div class="value">${item.mountain}</div>
+                            </div>
+                            <div class="review-field">
+                                <label>联盟</label>
+                                <div class="value">${item.alliance}</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="review-content">
+                            <div class="review-field">
+                                <label>山头</label>
+                                <div class="value">${item.mountain}</div>
+                            </div>
+                            <div class="review-field">
+                                <label>联盟名称</label>
+                                <div class="value">${item.alliance}</div>
+                            </div>
+                            <div class="review-field">
+                                <label>联盟关系</label>
+                                <div class="value">${item.relation === 'green' ? '联盟' : item.relation === 'orange' ? '敌对' : '中立'}</div>
+                            </div>
+                            <div class="review-field">
+                                <label>总战力</label>
+                                <div class="value">${item.totalPower}万亿</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    if (item.members && item.members.length > 0) {
+                        html += `<div style="margin: 10px 0; font-weight: 600;">车头信息：</div>`;
+                        item.members.forEach(member => {
+                            html += `<div style="margin: 5px 0; padding: 5px; background: white; border-radius: 5px;">
+                                ${member.name}: ${member.power}万亿
+                            </div>`;
+                        });
+                    }
+                }
+                
+                html += `
+                        <div class="review-actions">
+                            <button class="reject-btn" onclick="rejectData(${index})">拒绝</button>
+                            <button class="approve-btn" onclick="approveData(${index})">通过</button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // 通过审核
+        async function approveData(index) {
+            const item = pendingData[index];
+            
+            if (item.type === 'delete') {
+                // 处理删除申请
+                const success = await deleteAllianceData(item.mountain, item.alliance);
+                if (!success) {
+                    showToast('删除操作失败', 'error');
+                    return;
+                }
+            } else {
+                // 处理新增或更新
+                const newData = {
+                    mountain: item.mountain,
+                    alliance: item.alliance,
+                    relation: item.relation,
+                    totalPower: item.totalPower,
+                    members: item.members || []
+                };
+                
+                const success = await saveAllianceData(newData);
+                if (!success) {
+                    showToast('保存操作失败', 'error');
+                    return;
+                }
+            }
+            
+            // 删除待审核数据
+            await deletePendingData(item.firebaseKey);
+            showToast('数据已通过审核！');
+        }
+
+        // 拒绝审核
+        async function rejectData(index) {
+            const item = pendingData[index];
+            await deletePendingData(item.firebaseKey);
+            showToast('数据已拒绝！');
+        }
+
+        // 显示提示
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // 处理新增表单提交
+        document.getElementById('addForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = e.target.querySelector('.submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '提交中...';
+            
+            const formData = new FormData(e.target);
+            const newData = {
+                mountain: formData.get('mountain').trim(),
+                alliance: formData.get('alliance').trim(),
+                relation: formData.get('relation'),
+                totalPower: parseFloat(formData.get('totalPower')),
+                members: [],
+                timestamp: new Date().toISOString()
+            };
+            
+            if (formData.get('member1Name') && formData.get('member1Power')) {
+                newData.members.push({
+                    name: formData.get('member1Name').trim(),
+                    power: parseFloat(formData.get('member1Power'))
+                });
+            }
+            
+            if (formData.get('member2Name') && formData.get('member2Power')) {
+                newData.members.push({
+                    name: formData.get('member2Name').trim(),
+                    power: parseFloat(formData.get('member2Power'))
+                });
+            }
+            
+            let success = false;
+            
+            if (isAdmin) {
+                // 管理员可以直接添加
+                const exists = allianceData.some(item => 
+                    item.mountain === newData.mountain && item.alliance === newData.alliance
+                );
+                
+                if (exists) {
+                    if (confirm(`${newData.mountain} 的 ${newData.alliance} 已存在，是否覆盖？`)) {
+                        success = await saveAllianceData(newData);
+                    }
+                } else {
+                    success = await saveAllianceData(newData);
+                }
+                
+                if (success) {
+                    showToast('数据提交成功！');
+                    e.target.reset();
+                    showPage('main');
+                }
+            } else {
+                // 普通用户需要审核
+                newData.type = 'new';
+                success = await savePendingData(newData);
+                
+                if (success) {
+                    showToast('数据已提交，等待管理员审核');
+                    e.target.reset();
+                    showPage('main');
+                }
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.textContent = '提交数据';
+        });
+
+        // 处理更新表单提交
+        document.getElementById('updateForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = e.target.querySelector('.submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '提交中...';
+            
+            const formData = new FormData(e.target);
+            const mountain = formData.get('mountain');
+            const alliance = formData.get('alliance');
+            
+            const updateData = {
+                mountain: mountain,
+                alliance: alliance,
+                relation: formData.get('relation'),
+                totalPower: parseFloat(formData.get('totalPower')),
+                members: [],
+                timestamp: new Date().toISOString()
+            };
+            
+            if (formData.get('member1Name') && formData.get('member1Power')) {
+                updateData.members.push({
+                    name: formData.get('member1Name').trim(),
+                    power: parseFloat(formData.get('member1Power'))
+                });
+            }
+            
+            if (formData.get('member2Name') && formData.get('member2Power')) {
+                updateData.members.push({
+                    name: formData.get('member2Name').trim(),
+                    power: parseFloat(formData.get('member2Power'))
+                });
+            }
+            
+            let success = false;
+            
+            if (isAdmin) {
+                // 管理员可以直接更新
+                success = await saveAllianceData(updateData);
+                
+                if (success) {
+                    showToast('数据更新成功！');
+                    showPage('main');
+                }
+            } else {
+                // 普通用户需要审核
+                updateData.type = 'update';
+                success = await savePendingData(updateData);
+                
+                if (success) {
+                    showToast('修改已提交，等待管理员审核');
+                    showPage('main');
+                }
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.textContent = '提交修改';
+        });
+
+        // 初始化
+        function init() {
+            // 检查管理员状态
+            if (sessionStorage.getItem('isAdmin') === 'true') {
+                isAdmin = true;
+            }
+            
+            updateAdminUI();
+            initConnectionMonitoring();
+            initDataListeners();
+            showPage('main');
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
