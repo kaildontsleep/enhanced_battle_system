@@ -781,12 +781,12 @@
         </div>
 
         <div class="header">
-            <h1>⚔️ 寻道大千恶人谷——鲸鱼🐳联盟战力展示与外交系统 ⚔️</h1>
-            <p>实时更新各山头联盟战力数据，助力联盟外交决策</p>
+            <h1>寻道大千鲸鱼🐳联盟战力展示与外交系统</h1>
+            <p>实时更新各山头妖盟战力数据，助力联盟外交决策</p>
         </div>
 
         <div class="nav-buttons">
-            <button class="nav-btn active" onclick="showPage('main')">联盟数据展示</button>
+            <button class="nav-btn active" onclick="showPage('main')">妖盟数据展示</button>
             <button class="nav-btn" onclick="showPage('add')">提交新数据</button>
             <button class="nav-btn" onclick="showPage('update')">更新已有数据</button>
             <button class="nav-btn hidden" id="reviewBtn" onclick="showPage('review')">
@@ -806,7 +806,7 @@
                         </select>
                     </div>
                     <div class="filter-group">
-                        <label>联盟类型：</label>
+                        <label>妖盟类型：</label>
                         <select id="typeFilter" onchange="filterData()">
                             <option value="all">全部类型</option>
                             <option value="green">联盟（绿色）</option>
@@ -831,13 +831,13 @@
             <button class="back-btn" onclick="showPage('main')">← 返回主页</button>
             
             <div class="form-header">
-                <h2>📝 提交联盟数据</h2>
+                <h2>📝 提交妖盟数据</h2>
             </div>
 
             <div class="form-info">
                 <strong>填写说明：</strong>
                 <ul>
-                    <li>山头名称：如"黄龙山9"，请保持命名统一</li>
+                    <li>山头名称：如"天道山4"，请保持命名统一</li>
                     <li>联盟/敌对/中立：根据外交关系选择</li>
                     <li>战力单位为万亿，可填写小数，如：33.88</li>
                     <li><strong>注意：提交后需要管理员审核才会显示</strong></li>
@@ -847,18 +847,18 @@
             <form id="addForm">
                 <div class="form-group">
                     <label>山头名称 *</label>
-                    <input type="text" name="mountain" placeholder="请输入山头名称，如：黄龙山9" required>
+                    <input type="text" name="mountain" placeholder="请输入山头名称，如：天道山4" required>
                 </div>
 
                 <div class="form-group">
-                    <label>联盟名称 *</label>
-                    <input type="text" name="alliance" placeholder="请输入联盟名称" required>
+                    <label>妖盟名称 *</label>
+                    <input type="text" name="alliance" placeholder="请输入妖盟名称" required>
                 </div>
 
                 <div class="form-group">
-                    <label>联盟关系 *</label>
+                    <label>妖盟关系 *</label>
                     <select name="relation" required>
-                        <option value="">请选择联盟关系</option>
+                        <option value="">请选择妖盟关系</option>
                         <option value="green">联盟（绿色）</option>
                         <option value="orange">敌对（橙色）</option>
                         <option value="blue">中立（蓝色）</option>
@@ -866,7 +866,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>联盟总战力（万亿）*</label>
+                    <label>妖盟总战力（万亿）*</label>
                     <input type="number" name="totalPower" step="0.01" placeholder="例如：33.88" required>
                 </div>
 
@@ -893,11 +893,11 @@
             <button class="back-btn" onclick="showPage('main')">← 返回主页</button>
             
             <div class="form-header">
-                <h2>🔄 更新联盟数据</h2>
+                <h2>🔄 更新妖盟数据</h2>
             </div>
 
             <div class="form-info">
-                <strong>说明：</strong>此功能用于更新已存在的联盟数据。选择山头和联盟后，可以更新联盟关系、总战力和车头信息。
+                <strong>说明：</strong>此功能用于更新已存在的妖盟数据。选择山头和妖盟后，可以更新妖盟关系、总战力和车头信息。
                 <br><strong>注意：修改后需要管理员审核才会生效</strong>
             </div>
 
@@ -910,14 +910,14 @@
                 </div>
 
                 <div class="form-group">
-                    <label>选择联盟 *</label>
+                    <label>选择妖盟 *</label>
                     <select name="alliance" id="updateAlliance" required onchange="loadAllianceData()">
                         <option value="">请先选择山头</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label>联盟关系 *</label>
+                    <label>妖盟关系 *</label>
                     <select name="relation" id="updateRelation" required>
                         <option value="">请选择联盟关系</option>
                         <option value="green">联盟（绿色）</option>
@@ -927,7 +927,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>联盟总战力（万亿）*</label>
+                    <label>妖盟总战力（万亿）*</label>
                     <input type="number" id="updateTotalPower" name="totalPower" step="0.01" placeholder="例如：33.88" required>
                 </div>
 
@@ -946,7 +946,7 @@
                 </div>
 
                 <button type="submit" class="submit-btn">提交修改</button>
-                <button type="button" class="delete-btn" onclick="deleteAlliance()">删除此联盟</button>
+                <button type="button" class="delete-btn" onclick="deleteAlliance()">删除此妖盟</button>
             </form>
         </div>
 
@@ -1037,7 +1037,7 @@
 
         // 初始化数据监听
         function initDataListeners() {
-            // 监听联盟数据
+            // 监听妖盟数据
             database.ref('alliances').on('value', (snapshot) => {
                 const data = snapshot.val();
                 allianceData = data ? Object.values(data) : [];
@@ -1061,7 +1061,7 @@
             });
         }
 
-        // 保存联盟数据到Firebase
+        // 保存妖盟数据到Firebase
         async function saveAllianceData(data, isUpdate = false, originalKey = null) {
             try {
                 if (isUpdate && originalKey) {
@@ -1071,7 +1071,7 @@
                 }
                 return true;
             } catch (error) {
-                console.error('保存联盟数据失败:', error);
+                console.error('保存妖盟数据失败:', error);
                 showToast('保存数据失败，请检查网络连接', 'error');
                 return false;
             }
@@ -1089,7 +1089,7 @@
             }
         }
 
-        // 删除联盟数据
+        // 删除妖盟数据
         async function deleteAllianceData(mountain, alliance) {
             try {
                 const snapshot = await database.ref('alliances').once('value');
@@ -1103,7 +1103,7 @@
                 }
                 return false;
             } catch (error) {
-                console.error('删除联盟数据失败:', error);
+                console.error('删除妖盟数据失败:', error);
                 showToast('删除数据失败，请检查网络连接', 'error');
                 return false;
             }
@@ -1269,7 +1269,7 @@
                 <div class="stat-item">
                     <span class="icon">📊</span>
                     <span class="label">总数：</span>
-                    <span class="value">${totalCount}个联盟</span>
+                    <span class="value">${totalCount}个妖盟</span>
                 </div>
                 <div class="stat-item">
                     <span class="icon">⚡</span>
@@ -1341,7 +1341,7 @@
                 container.innerHTML = `
                     <div class="empty-state">
                         <h3>暂无数据</h3>
-                        <p>请点击"提交新数据"添加联盟信息</p>
+                        <p>请点击"提交新数据"添加妖盟信息</p>
                     </div>
                 `;
                 return;
@@ -1353,7 +1353,7 @@
                     <div class="mountain-section">
                         <div class="section-header">
                             <h2>🏔 ${mountain}</h2>
-                            <span class="count">${groupedData[mountain].length}个联盟</span>
+                            <span class="count">${groupedData[mountain].length}个妖盟</span>
                         </div>
                         <div class="alliance-grid">
                 `;
@@ -1399,7 +1399,7 @@
             container.innerHTML = html;
         }
 
-        // 编辑联盟
+        // 编辑妖盟
         function editAlliance(mountain, alliance) {
             showPage('update');
             setTimeout(() => {
@@ -1412,24 +1412,24 @@
             }, 100);
         }
 
-        // 删除联盟
+        // 删除妖盟
         async function deleteAlliance() {
             const mountain = document.getElementById('updateMountain').value;
             const alliance = document.getElementById('updateAlliance').value;
             
             if (!mountain || !alliance) {
-                showToast('请先选择要删除的联盟', 'error');
+                showToast('请先选择要删除的妖盟', 'error');
                 return;
             }
             
-            if (!confirm(`确认删除 ${mountain} 的 ${alliance} 联盟吗？`)) {
+            if (!confirm(`确认删除 ${mountain} 的 ${alliance} 妖盟吗？`)) {
                 return;
             }
             
             if (isAdmin) {
                 const success = await deleteAllianceData(mountain, alliance);
                 if (success) {
-                    showToast('联盟删除成功！');
+                    showToast('妖盟删除成功！');
                     showPage('main');
                 }
             } else {
@@ -1458,7 +1458,7 @@
             });
         }
 
-        // 加载联盟列表
+        // 加载妖盟列表
         function loadAlliances() {
             const mountain = document.getElementById('updateMountain').value;
             const select = document.getElementById('updateAlliance');
@@ -1472,13 +1472,13 @@
                 .filter(item => item.mountain === mountain)
                 .map(item => item.alliance);
             
-            select.innerHTML = '<option value="">请选择联盟</option>';
+            select.innerHTML = '<option value="">请选择妖盟</option>';
             alliances.forEach(alliance => {
                 select.innerHTML += `<option value="${alliance}">${alliance}</option>`;
             });
         }
 
-        // 加载联盟数据
+        // 加载妖盟数据
         function loadAllianceData() {
             const mountain = document.getElementById('updateMountain').value;
             const alliance = document.getElementById('updateAlliance').value;
@@ -1539,7 +1539,7 @@
                                 <div class="value">${item.mountain}</div>
                             </div>
                             <div class="review-field">
-                                <label>联盟</label>
+                                <label>妖盟</label>
                                 <div class="value">${item.alliance}</div>
                             </div>
                         </div>
@@ -1552,11 +1552,11 @@
                                 <div class="value">${item.mountain}</div>
                             </div>
                             <div class="review-field">
-                                <label>联盟名称</label>
+                                <label>妖盟名称</label>
                                 <div class="value">${item.alliance}</div>
                             </div>
                             <div class="review-field">
-                                <label>联盟关系</label>
+                                <label>妖盟关系</label>
                                 <div class="value">${item.relation === 'green' ? '联盟' : item.relation === 'orange' ? '敌对' : '中立'}</div>
                             </div>
                             <div class="review-field">
