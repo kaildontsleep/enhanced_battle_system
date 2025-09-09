@@ -1,4 +1,4 @@
-// 表单处理相关功能 - 更新版本
+// 表单处理相关功能 - 增强版本
 
 // 处理新增表单提交 - 确保包含时间戳
 async function handleAddForm(event) {
@@ -29,8 +29,8 @@ async function handleAddForm(event) {
             relation: formData.get('relation'),
             totalPower: parseFloat(formData.get('totalPower')) || 0,
             members: [],
-            timestamp: new Date().toISOString(), // 提交时间戳
-            lastUpdated: new Date().toISOString() // 最后更新时间戳
+            timestamp: new Date().toISOString(),
+            lastUpdated: new Date().toISOString()
         };
         
         // 处理车头信息
@@ -58,7 +58,6 @@ async function handleAddForm(event) {
             
             if (exists) {
                 if (confirm(`${allianceData.mountain} 的 ${allianceData.alliance} 已存在，是否覆盖？`)) {
-                    // 如果是覆盖，添加审核者信息
                     allianceData.approvedBy = window.allianceSystem.currentUser?.username || 'admin';
                     success = await window.AllianceUtils.saveAllianceData(allianceData);
                 }
@@ -96,7 +95,7 @@ async function handleAddForm(event) {
     }
 }
 
-// 处理更新表单提交 - 确保包含时间戳
+// 处理更新表单提交 - 支持更改山头和妖盟名
 async function handleUpdateForm(event) {
     event.preventDefault();
     
@@ -119,14 +118,19 @@ async function handleUpdateForm(event) {
             }
         }
         
+        const originalMountain = formData.get('originalMountain');
+        const originalAlliance = formData.get('originalAlliance');
+        const newMountain = formData.get('mountain').trim();
+        const newAlliance = formData.get('alliance').trim();
+        
         const allianceData = {
-            mountain: formData.get('mountain').trim(),
-            alliance: formData.get('alliance').trim(),
+            mountain: newMountain,
+            alliance: newAlliance,
             relation: formData.get('relation'),
             totalPower: parseFloat(formData.get('totalPower')) || 0,
             members: [],
-            timestamp: new Date().toISOString(), // 更新时间戳
-            lastUpdated: new Date().toISOString() // 最后更新时间戳
+            timestamp: new Date().toISOString(),
+            lastUpdated: new Date().toISOString()
         };
         
         // 处理车头信息
@@ -144,11 +148,20 @@ async function handleUpdateForm(event) {
             });
         }
         
+        // 检查是否更改了山头或妖盟名
+        const hasNameChange = (newMountain !== originalMountain || newAlliance !== originalAlliance);
+        
         let success = false;
         
         if (window.allianceSystem.isAdmin) {
             // 管理员可以直接更新
             allianceData.approvedBy = window.allianceSystem.currentUser?.username || 'admin';
+            
+            if (hasNameChange) {
+                // 如果更改了名称，需要先删除原数据，再添加新数据
+                await window.AllianceUtils.deleteAllianceData(originalMountain, originalAlliance);
+            }
+            
             success = await window.AllianceUtils.saveAllianceData(allianceData);
             
             if (success) {
@@ -160,6 +173,10 @@ async function handleUpdateForm(event) {
         } else {
             // 普通用户需要审核
             allianceData.type = 'update';
+            allianceData.originalMountain = originalMountain;
+            allianceData.originalAlliance = originalAlliance;
+            allianceData.hasNameChange = hasNameChange;
+            
             success = await window.AllianceUtils.savePendingData(allianceData);
             
             if (success) {
@@ -178,83 +195,150 @@ async function handleUpdateForm(event) {
     }
 }
 
-// 加载山头列表用于更新
-function loadMountains() {
+// 初始化输入辅助功能
+function initUpdateHelpers() {
+    const mountainInput = document.getElementById('updateMountain');
+    const allianceInput = document.getElementById('updateAlliance');
+    const mountainDropdown = document.getElementById('mountainDropdown');
+    const allianceDropdown = document.getElementById('allianceDropdown');
+    
+    if (!mountainInput || !allianceInput) return;
+    
+    // 获取所有山头和妖盟选项
     const mountains = [...new Set(window.allianceSystem.allianceData.map(item => item.mountain))].sort();
-    const select = document.getElementById('updateMountain');
+    const alliances = [...new Set(window.allianceSystem.allianceData.map(item => item.alliance))].sort();
     
-    if (!select) return;
+    // 山头输入辅助
+    mountainInput.addEventListener('focus', () => {
+        showHelperDropdown(mountainDropdown, mountains, (value) => {
+            mountainInput.value = value;
+            hideHelperDropdown(mountainDropdown);
+        });
+    });
     
-    select.innerHTML = '<option value="">请选择山头</option>';
-    mountains.forEach(mountain => {
-        const option = document.createElement('option');
-        option.value = mountain;
-        option.textContent = mountain;
-        select.appendChild(option);
+    mountainInput.addEventListener('input', () => {
+        const value = mountainInput.value.toLowerCase();
+        const filtered = mountains.filter(m => m.toLowerCase().includes(value));
+        showHelperDropdown(mountainDropdown, filtered, (selectedValue) => {
+            mountainInput.value = selectedValue;
+            hideHelperDropdown(mountainDropdown);
+        });
+    });
+    
+    // 妖盟输入辅助
+    allianceInput.addEventListener('focus', () => {
+        showHelperDropdown(allianceDropdown, alliances, (value) => {
+            allianceInput.value = value;
+            hideHelperDropdown(allianceDropdown);
+        });
+    });
+    
+    allianceInput.addEventListener('input', () => {
+        const value = allianceInput.value.toLowerCase();
+        const filtered = alliances.filter(a => a.toLowerCase().includes(value));
+        showHelperDropdown(allianceDropdown, filtered, (selectedValue) => {
+            allianceInput.value = selectedValue;
+            hideHelperDropdown(allianceDropdown);
+        });
+    });
+    
+    // 点击其他地方隐藏下拉框
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.input-with-helper')) {
+            hideHelperDropdown(mountainDropdown);
+            hideHelperDropdown(allianceDropdown);
+        }
     });
 }
 
-// 加载妖盟列表
-function loadAlliances() {
-    const mountain = document.getElementById('updateMountain')?.value;
-    const select = document.getElementById('updateAlliance');
+// 显示辅助下拉框
+function showHelperDropdown(dropdown, items, onSelect) {
+    if (!dropdown || items.length === 0) return;
     
-    if (!select || !mountain) {
-        if (select) select.innerHTML = '<option value="">请先选择山头</option>';
-        return;
+    dropdown.innerHTML = items.map(item => 
+        `<div class="helper-item" data-value="${item}">${item}</div>`
+    ).join('');
+    
+    dropdown.classList.add('show');
+    
+    // 绑定点击事件
+    dropdown.querySelectorAll('.helper-item').forEach(item => {
+        item.addEventListener('click', () => {
+            onSelect(item.dataset.value);
+        });
+    });
+}
+
+// 隐藏辅助下拉框
+function hideHelperDropdown(dropdown) {
+    if (dropdown) {
+        dropdown.classList.remove('show');
     }
-    
-    const alliances = window.allianceSystem.allianceData
-        .filter(item => item.mountain === mountain)
-        .map(item => item.alliance);
-    
-    select.innerHTML = '<option value="">请选择妖盟</option>';
-    alliances.forEach(alliance => {
-        const option = document.createElement('option');
-        option.value = alliance;
-        option.textContent = alliance;
-        select.appendChild(option);
-    });
 }
 
-// 加载妖盟数据到表单
-function loadAllianceData() {
-    const mountain = document.getElementById('updateMountain')?.value;
-    const alliance = document.getElementById('updateAlliance')?.value;
+// 从URL参数加载数据 - 增强版本
+function loadFromURLParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const mountain = urlParams.get('mountain');
+    const alliance = urlParams.get('alliance');
     
-    if (!mountain || !alliance) return;
-    
-    const data = window.allianceSystem.allianceData.find(item => 
-        item.mountain === mountain && item.alliance === alliance
-    );
-    
-    if (data) {
-        document.getElementById('updateRelation').value = data.relation || '';
-        document.getElementById('updateTotalPower').value = data.totalPower || '';
+    if (mountain && alliance) {
+        // 查找对应的数据
+        const data = window.allianceSystem.allianceData.find(item => 
+            item.mountain === mountain && item.alliance === alliance
+        );
         
-        document.getElementById('updateMember1Name').value = data.members?.[0]?.name || '';
-        document.getElementById('updateMember1Power').value = data.members?.[0]?.power || '';
-        document.getElementById('updateMember2Name').value = data.members?.[1]?.name || '';
-        document.getElementById('updateMember2Power').value = data.members?.[1]?.power || '';
+        if (data) {
+            // 填充表单数据
+            document.getElementById('updateMountain').value = data.mountain || '';
+            document.getElementById('updateAlliance').value = data.alliance || '';
+            document.getElementById('updateRelation').value = data.relation || '';
+            document.getElementById('updateTotalPower').value = data.totalPower || '';
+            
+            // 填充车头信息
+            document.getElementById('updateMember1Name').value = data.members?.[0]?.name || '';
+            document.getElementById('updateMember1Power').value = data.members?.[0]?.power || '';
+            document.getElementById('updateMember2Name').value = data.members?.[1]?.name || '';
+            document.getElementById('updateMember2Power').value = data.members?.[1]?.power || '';
+            
+            // 存储原始数据
+            document.getElementById('originalMountainValue').value = data.mountain;
+            document.getElementById('originalAllianceValue').value = data.alliance;
+            
+            // 显示当前数据信息
+            const infoDiv = document.getElementById('currentDataInfo');
+            if (infoDiv) {
+                document.getElementById('originalMountain').textContent = data.mountain;
+                document.getElementById('originalAlliance').textContent = data.alliance;
+                document.getElementById('originalUpdateTime').textContent = 
+                    data.lastUpdated ? window.AllianceUtils.formatDate(data.lastUpdated) : '未知';
+                infoDiv.style.display = 'block';
+            }
+        } else {
+            window.AllianceUtils.showToast('未找到指定的妖盟数据', 'error');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+        }
     }
 }
 
-// 删除妖盟
+// 删除妖盟 - 使用原始数据
 async function deleteAlliance() {
-    const mountain = document.getElementById('updateMountain')?.value;
-    const alliance = document.getElementById('updateAlliance')?.value;
+    const originalMountain = document.getElementById('originalMountainValue')?.value;
+    const originalAlliance = document.getElementById('originalAllianceValue')?.value;
     
-    if (!mountain || !alliance) {
-        window.AllianceUtils.showToast('请先选择要删除的妖盟', 'error');
+    if (!originalMountain || !originalAlliance) {
+        window.AllianceUtils.showToast('无法获取原始数据信息', 'error');
         return;
     }
     
-    if (!confirm(`确认删除 ${mountain} 的 ${alliance} 妖盟吗？`)) {
+    if (!confirm(`确认删除 ${originalMountain} 的 ${originalAlliance} 妖盟吗？`)) {
         return;
     }
     
     if (window.allianceSystem.isAdmin) {
-        const success = await window.AllianceUtils.deleteAllianceData(mountain, alliance);
+        const success = await window.AllianceUtils.deleteAllianceData(originalMountain, originalAlliance);
         if (success) {
             window.AllianceUtils.showToast('妖盟删除成功！');
             setTimeout(() => {
@@ -264,8 +348,8 @@ async function deleteAlliance() {
     } else {
         const deleteRequest = {
             type: 'delete',
-            mountain: mountain,
-            alliance: alliance,
+            mountain: originalMountain,
+            alliance: originalAlliance,
             timestamp: new Date().toISOString()
         };
         
@@ -276,31 +360,6 @@ async function deleteAlliance() {
                 window.location.href = 'index.html';
             }, 1500);
         }
-    }
-}
-
-// 从URL参数加载数据
-function loadFromURLParams() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const mountain = urlParams.get('mountain');
-    const alliance = urlParams.get('alliance');
-    
-    if (mountain && alliance) {
-        setTimeout(() => {
-            const mountainSelect = document.getElementById('updateMountain');
-            if (mountainSelect) {
-                mountainSelect.value = mountain;
-                loadAlliances();
-                
-                setTimeout(() => {
-                    const allianceSelect = document.getElementById('updateAlliance');
-                    if (allianceSelect) {
-                        allianceSelect.value = alliance;
-                        loadAllianceData();
-                    }
-                }, 200);
-            }
-        }, 500);
     }
 }
 
@@ -319,9 +378,7 @@ function getFieldName(field) {
 window.AllianceForms = {
     handleAddForm,
     handleUpdateForm,
-    loadMountains,
-    loadAlliances,
-    loadAllianceData,
-    deleteAlliance,
-    loadFromURLParams
+    initUpdateHelpers,
+    loadFromURLParams,
+    deleteAlliance
 };
