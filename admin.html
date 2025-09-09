@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据审核管理 - 鲸鱼联盟系统</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
+    <!-- 样式文件 -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="connection-status" id="connectionStatus">
+            连接中...
+        </div>
+
+        <div class="admin-status">
+            <span id="adminInfo">未登录</span>
+            <button class="admin-btn" id="adminBtn">管理员登录</button>
+        </div>
+
+        <div class="header">
+            <h1>寻道大千鲸鱼联盟战力展示与外交系统</h1>
+            <p>数据审核管理中心</p>
+        </div>
+
+        <div class="nav-buttons" id="navButtons">
+            <!-- 导航按钮将通过JS动态生成 -->
+        </div>
+
+        <div class="form-container">
+            <a href="index.html" class="back-btn">← 返回主页</a>
+            
+            <div class="form-header">
+                <h2>🔍 数据审核管理</h2>
+            </div>
+
+            <!-- 批量操作按钮 -->
+            <div style="margin-bottom: 20px; text-align: center;">
+                <button onclick="window.AllianceAdmin.batchApproveAll()" class="submit-btn" style="width: auto; padding: 10px 20px; margin: 0;">
+                    批量通过所有申请
+                </button>
+            </div>
+
+            <div id="reviewList">
+                <div class="loading">加载审核数据中...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示信息 -->
+    <div class="toast" id="toast"></div>
+
+    <!-- JavaScript文件 -->
+    <script src="js/common.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/admin-management.js"></script>
+    <script src="js/admin.js"></script>
+
+    
+    <script>
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 检查管理员权限
+            if (!window.AllianceAuth.checkPageAccess(true)) {
+                return;
+            }
+            
+            // 监听待审核数据更新事件
+            window.addEventListener('pendingDataUpdated', () => {
+                window.AllianceAdmin.loadReviewData();
+            });
+            
+            // 初始加载审核数据
+            setTimeout(() => {
+                window.AllianceAdmin.loadReviewData();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

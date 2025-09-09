@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏆 排行榜 - 鲸鱼联盟系统</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+
+        .connection-status.connected {
+            background: #4caf50;
+            color: white;
+        }
+
+        .connection-status.disconnected {
+            background: #f44336;
+            color: white;
+        }
+
+        .admin-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.9);
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #333;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        .admin-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            animation: fadeInDown 0.5s;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 10px 20px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .nav-btn.active {
+            background: #ffd700;
+            color: #333;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: white;
+            text-decoration: none;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            transition: background 0.3s;
+        }
+
+        .back-link:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .filter-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .filter-title {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .filter-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .filter-btn {
+            padding: 8px 20px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .filter-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .filter-btn.green-filter {
+            border-color: #4CAF50;
+            color: #4CAF50;
+        }
+
+        .filter-btn.green-filter.active {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .filter-btn.orange-filter {
+            border-color: #f44336;
+            color: #f44336;
+        }
+
+        .filter-btn.orange-filter.active {
+            background: #f44336;
+            color: white;
+        }
+
+        .filter-btn.blue-filter {
+            border-color: #2196F3;
+            color: #2196F3;
+        }
+
+        .filter-btn.blue-filter.active {
+            background: #2196F3;
+            color: white;
+        }
+
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px 20px;
+            text-align: center;
+            cursor: pointer;
+            background: #f8f9fa;
+            color: #666;
+            font-weight: bold;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .tab:first-child {
+            border-right: 1px solid #e0e0e0;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .tab:hover:not(.active) {
+            background: #e9ecef;
+        }
+
+        .ranking-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            animation: fadeInUp 0.5s;
+        }
+
+        .ranking-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .ranking-list {
+            padding: 0;
+        }
+
+        .ranking-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.3s;
+            min-height: 70px;
+        }
+
+        .ranking-item:hover {
+            background: #f8f9fa;
+        }
+
+        .ranking-item:last-child {
+            border-bottom: none;
+        }
+
+        .rank {
+            width: 80px;
+            font-size: 1.3em;
+            font-weight: bold;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .rank-1 { color: #ffd700; }
+        .rank-2 { color: #c0c0c0; }
+        .rank-3 { color: #cd7f32; }
+
+        .rank-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .rank-badge.top3 {
+            background: linear-gradient(45deg, #ffd700, #ff8c00);
+            color: white;
+        }
+
+        .rank-badge.top10 {
+            background: linear-gradient(45deg, #4CAF50, #2196F3);
+            color: white;
+        }
+
+        .rank-badge.normal {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .info {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1.5fr 1.5fr auto 1fr;
+            gap: 20px;
+            align-items: center;
+            padding: 0 10px;
+        }
+
+        .info.player-info {
+            grid-template-columns: 1.2fr 1.2fr 1.2fr 1fr;
+        }
+
+        .mountain-name {
+            font-weight: bold;
+            color: #333;
+            font-size: 1.05em;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .alliance-name {
+            color: #667eea;
+            font-weight: bold;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .alliance-type {
+            font-size: 0.9em;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: bold;
+            text-align: center;
+            white-space: nowrap;
+            justify-self: center;
+        }
+
+        .type-green {
+            background: #e8f5e8;
+            color: #4CAF50;
+        }
+
+        .type-orange {
+            background: #ffebee;
+            color: #f44336;
+        }
+
+        .type-blue {
+            background: #f3f4f6;
+            color: #2196F3;
+        }
+
+        .power {
+            font-size: 1.15em;
+            font-weight: bold;
+            color: #ff6b35;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .player-name {
+            color: #333;
+            font-weight: bold;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 50px 20px;
+            color: #999;
+            font-size: 1.2em;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px 20px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        .loading::after {
+            content: "";
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        .toast {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: #4caf50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: none;
+            animation: slideIn 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        .toast.error {
+            background: #f44336;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+            }
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .tabs {
+                flex-direction: row;
+            }
+
+            .tab {
+                font-size: 0.9em;
+                padding: 12px 10px;
+            }
+
+            .ranking-item {
+                padding: 12px 10px;
+                min-height: 60px;
+            }
+
+            .rank {
+                width: 50px;
+                font-size: 1.1em;
+            }
+
+            .rank-badge {
+                font-size: 0.8em;
+                padding: 1px 6px;
+            }
+
+            .info {
+                display: flex;
+                flex-direction: row;
+                gap: 5px;
+                padding: 0;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .info.player-info {
+                display: flex;
+            }
+
+            .mountain-name {
+                display: none;
+            }
+
+            .alliance-name {
+                flex: 1;
+                font-size: 0.95em;
+                text-align: left;
+                padding: 0 8px;
+                max-width: 45%;
+            }
+
+            .alliance-type {
+                font-size: 0.75em;
+                padding: 2px 6px;
+                margin: 0 5px;
+                flex-shrink: 0;
+            }
+
+            .player-name {
+                flex: 1;
+                font-size: 0.9em;
+                text-align: left;
+                padding: 0 8px;
+                max-width: 35%;
+            }
+
+            .power {
+                font-size: 0.95em;
+                flex-shrink: 0;
+                width: auto;
+                min-width: 60px;
+                text-align: right;
+            }
+
+            .filter-buttons {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            .filter-btn {
+                flex: 1;
+                min-width: 80px;
+                font-size: 0.85em;
+                padding: 6px 12px;
+            }
+
+            .stats {
+                flex-direction: row;
+                gap: 5px;
+            }
+
+            .stat-item {
+                flex: 1;
+            }
+
+            .stat-number {
+                font-size: 1.3em;
+            }
+
+            .stat-label {
+                font-size: 0.75em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="connection-status" id="connectionStatus">
+            连接中...
+        </div>
+
+        <div class="admin-status">
+            <span id="adminInfo">未登录</span>
+            <button class="admin-btn" id="adminBtn">管理员登录</button>
+        </div>
+
+        <div class="header">
+            <h1>🏆 实力排行榜</h1>
+            <p>各山头妖盟与个人战力排名</p>
+        </div>
+
+        <div class="nav-buttons" id="navButtons">
+            <!-- 导航按钮将通过JS动态生成 -->
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div id="totalAlliances" class="stat-number">0</div>
+                <div class="stat-label">总妖盟数</div>
+            </div>
+            <div class="stat-item">
+                <div id="totalPlayers" class="stat-number">0</div>
+                <div class="stat-label">总车头数</div>
+            </div>
+            <div class="stat-item">
+                <div id="currentFilter" class="stat-number">全部</div>
+                <div class="stat-label">当前筛选</div>
+            </div>
+        </div>
+
+        <div class="filter-section">
+            <div class="filter-title">筛选妖盟类型</div>
+            <div class="filter-buttons">
+                <button class="filter-btn active" onclick="setFilter('all')">全部显示</button>
+                <button class="filter-btn green-filter" onclick="setFilter('green')">联盟</button>
+                <button class="filter-btn orange-filter" onclick="setFilter('orange')">敌对</button>
+                <button class="filter-btn blue-filter" onclick="setFilter('blue')">中立</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('alliance')">🏆 妖盟战力排行</button>
+            <button class="tab" onclick="switchTab('player')">👑 车头战力排行</button>
+        </div>
+
+        <div class="ranking-container">
+            <div class="ranking-header">
+                <h2 id="rankingTitle">妖盟总战力排行榜</h2>
+                <p id="rankingSubtitle">根据最新审核数据排名</p>
+                <small id="lastUpdateTime" style="opacity: 0.8; font-size: 12px;">最后更新：加载中...</small>
+            </div>
+            
+            <div id="rankingContent" class="loading">
+                ⏳ 加载排行榜数据中...
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示信息 -->
+    <div class="toast" id="toast"></div>
+
+    <!-- JavaScript文件 -->
+    <script src="js/common.js"></script>
+    <script src="js/rankings.js"></script>
+    
+    <script>
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Rankings page loading...');
+            
+            // 创建导航
+            if (window.AllianceUtils && window.AllianceUtils.createNavigation) {
+                window.AllianceUtils.createNavigation('rankings');
+            }
+            
+            // 监听数据更新事件
+            window.addEventListener('allianceDataUpdated', () => {
+                console.log('Alliance data updated event received');
+                if (window.AllianceRankings) {
+                    window.AllianceRankings.loadRankingData();
+                }
+            });
+            
+            // 延迟初始化，确保common.js先加载
+            function initRankings() {
+                if (window.AllianceRankings && window.allianceSystem) {
+                    console.log('Initializing rankings...');
+                    window.AllianceRankings.loadRankingData();
+                } else {
+                    console.log('Dependencies not ready, retrying in 1 second...');
+                    setTimeout(initRankings, 1000);
+                }
+            }
+            
+            // 开始初始化
+            setTimeout(initRankings, 500);
+        });
+    </script>
+</body>
+</html>
