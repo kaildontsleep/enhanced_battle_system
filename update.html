@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>更新妖盟数据 - 鲸鱼联盟系统</title>
+    <title>编辑妖盟数据 - 鲸鱼联盟系统</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -11,6 +11,64 @@
     
     <!-- 样式文件 -->
     <link rel="stylesheet" href="css/style.css">
+    
+    <style>
+        .input-with-helper {
+            position: relative;
+        }
+        
+        .helper-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .helper-dropdown.show {
+            display: block;
+        }
+        
+        .helper-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .helper-item:hover {
+            background: #f5f5f5;
+        }
+        
+        .current-data-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .current-data-info h4 {
+            margin: 0 0 10px 0;
+            color: #667eea;
+        }
+        
+        .data-item {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        
+        .data-label {
+            font-weight: 600;
+            color: #555;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -25,7 +83,7 @@
 
         <div class="header">
             <h1>寻道大千鲸鱼联盟战力展示与外交系统</h1>
-            <p>更新妖盟战力数据</p>
+            <p>编辑妖盟战力数据</p>
         </div>
 
         <div class="nav-buttons" id="navButtons">
@@ -36,33 +94,61 @@
             <a href="index.html" class="back-btn">← 返回主页</a>
             
             <div class="form-header">
-                <h2>🔄 更新妖盟数据</h2>
+                <h2>✏️ 编辑妖盟数据</h2>
+            </div>
+
+            <!-- 当前数据信息显示 -->
+            <div class="current-data-info" id="currentDataInfo" style="display: none;">
+                <h4>📋 当前数据信息</h4>
+                <div class="data-item">
+                    <span class="data-label">原山头：</span>
+                    <span id="originalMountain">-</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">原妖盟：</span>
+                    <span id="originalAlliance">-</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">最后更新：</span>
+                    <span id="originalUpdateTime">-</span>
+                </div>
             </div>
 
             <div class="form-info">
-                <strong>说明：</strong>此功能用于更新已存在的妖盟数据。选择山头和妖盟后，可以更新妖盟关系、总战力和车头信息。
-                <br><strong>注意：修改后需要管理员审核才会生效</strong>
+                <strong>编辑说明：</strong>
+                <ul>
+                    <li>可以直接修改山头名称和妖盟名称</li>
+                    <li>点击输入框会显示现有选项供参考</li>
+                    <li>修改山头或妖盟名相当于创建新数据，原数据会被替换</li>
+                    <li><strong>注意：修改后需要管理员审核才会生效</strong></li>
+                </ul>
             </div>
 
             <form id="updateForm">
+                <!-- 隐藏字段存储原始数据 -->
+                <input type="hidden" id="originalMountainValue" name="originalMountain">
+                <input type="hidden" id="originalAllianceValue" name="originalAlliance">
+                
                 <div class="form-group">
-                    <label>选择山头 *</label>
-                    <select name="mountain" id="updateMountain" required>
-                        <option value="">请选择山头</option>
-                    </select>
+                    <label>山头名称 *</label>
+                    <div class="input-with-helper">
+                        <input type="text" name="mountain" id="updateMountain" placeholder="请输入山头名称，如：天道山4" required>
+                        <div class="helper-dropdown" id="mountainDropdown"></div>
+                    </div>
                 </div>
 
                 <div class="form-group">
-                    <label>选择妖盟 *</label>
-                    <select name="alliance" id="updateAlliance" required>
-                        <option value="">请先选择山头</option>
-                    </select>
+                    <label>妖盟名称 *</label>
+                    <div class="input-with-helper">
+                        <input type="text" name="alliance" id="updateAlliance" placeholder="请输入妖盟名称" required>
+                        <div class="helper-dropdown" id="allianceDropdown"></div>
+                    </div>
                 </div>
 
                 <div class="form-group">
                     <label>妖盟关系 *</label>
                     <select name="relation" id="updateRelation" required>
-                        <option value="">请选择联盟关系</option>
+                        <option value="">请选择妖盟关系</option>
                         <option value="green">联盟（绿色）</option>
                         <option value="orange">敌对（橙色）</option>
                         <option value="blue">中立（蓝色）</option>
@@ -88,7 +174,7 @@
                     </div>
                 </div>
 
-                <button type="submit" class="submit-btn">提交修改</button>
+                <button type="submit" class="submit-btn">保存修改</button>
                 <button type="button" class="delete-btn" onclick="window.AllianceForms.deleteAlliance()">删除此妖盟</button>
             </form>
         </div>
@@ -106,7 +192,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             // 监听数据更新事件
             window.addEventListener('allianceDataUpdated', () => {
-                window.AllianceForms.loadMountains();
+                window.AllianceForms.initUpdateHelpers();
                 window.AllianceForms.loadFromURLParams();
             });
             
@@ -116,17 +202,11 @@
                 updateForm.addEventListener('submit', window.AllianceForms.handleUpdateForm);
             }
             
-            // 绑定选择变化事件
-            const mountainSelect = document.getElementById('updateMountain');
-            const allianceSelect = document.getElementById('updateAlliance');
-            
-            if (mountainSelect) {
-                mountainSelect.addEventListener('change', window.AllianceForms.loadAlliances);
-            }
-            
-            if (allianceSelect) {
-                allianceSelect.addEventListener('change', window.AllianceForms.loadAllianceData);
-            }
+            // 延迟初始化，确保数据已加载
+            setTimeout(() => {
+                window.AllianceForms.initUpdateHelpers();
+                window.AllianceForms.loadFromURLParams();
+            }, 1000);
         });
     </script>
 </body>
