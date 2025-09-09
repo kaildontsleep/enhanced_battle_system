@@ -255,13 +255,13 @@ function updateAdminStatus() {
     }
 }
 
-// 创建导航按钮 - 需要在 common.js 中更新这个函数
+// 创建导航按钮 - 移除"更新已有数据"选项
 function createNavigation(currentPage = '') {
     const pages = [
         { name: 'index', title: '妖盟数据展示', url: 'index.html' },
         { name: 'rankings', title: '实力排行榜', url: 'rankings.html' },
-        { name: 'add', title: '提交新数据', url: 'add.html' },
-        { name: 'update', title: '更新已有数据', url: 'update.html' }
+        { name: 'add', title: '提交新数据', url: 'add.html' }
+        // 移除了 update 页面选项
     ];
     
     if (window.allianceSystem.isAdmin) {
@@ -382,4 +382,5 @@ window.AllianceUtils = {
     createNavigation,
     getCurrentPageName,
     checkPageAccess
+
 };
