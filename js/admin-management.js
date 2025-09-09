@@ -89,7 +89,7 @@ function renderAdminsList() {
     }
     
     const html = adminsData.map(admin => {
-        const isSuperAdmin = admin.role === 'super';
+        const isSuperAdmin = admin.role === 'superadmin';
         const isActive = admin.active !== false;
         const canEdit = admin.username !== window.allianceSystem.currentUser.username; // 不能编辑自己
         
