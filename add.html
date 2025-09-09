@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>提交妖盟数据 - 鲸鱼联盟系统</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
+    <!-- 样式文件 -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="connection-status" id="connectionStatus">
+            连接中...
+        </div>
+
+        <div class="admin-status">
+            <span id="adminInfo">未登录</span>
+            <button class="admin-btn" id="adminBtn">管理员登录</button>
+        </div>
+
+        <div class="header">
+            <h1>寻道大千鲸鱼🐳联盟战力展示与外交系统</h1>
+            <p>提交妖盟战力数据，完善联盟外交信息</p>
+        </div>
+
+        <div class="nav-buttons" id="navButtons">
+            <!-- 导航按钮将通过JS动态生成 -->
+        </div>
+
+        <div class="form-container">
+            <a href="index.html" class="back-btn">← 返回主页</a>
+            
+            <div class="form-header">
+                <h2>📝 提交妖盟数据</h2>
+            </div>
+
+            <div class="form-info">
+                <strong>填写说明：</strong>
+                <ul>
+                    <li>山头名称：如"天道山4"，请保持命名统一</li>
+                    <li>联盟/敌对/中立：根据外交关系选择</li>
+                    <li>战力单位为万亿，可填写小数，如：33.88</li>
+                    <li><strong>注意：提交后需要管理员审核才会显示</strong></li>
+                </ul>
+            </div>
+
+            <form id="addForm">
+                <div class="form-group">
+                    <label>山头名称 *</label>
+                    <input type="text" name="mountain" placeholder="请输入山头名称，如：天道山4" required>
+                </div>
+
+                <div class="form-group">
+                    <label>妖盟名称 *</label>
+                    <input type="text" name="alliance" placeholder="请输入妖盟名称" required>
+                </div>
+
+                <div class="form-group">
+                    <label>妖盟关系 *</label>
+                    <select name="relation" required>
+                        <option value="">请选择妖盟关系</option>
+                        <option value="green">联盟（绿色）</option>
+                        <option value="orange">敌对（橙色）</option>
+                        <option value="blue">中立（蓝色）</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>妖盟总战力（万亿）*</label>
+                    <input type="number" name="totalPower" step="0.01" placeholder="例如：33.88" required>
+                </div>
+
+                <div class="form-group">
+                    <label>车头信息（选填）</label>
+                    <div class="member-inputs">
+                        <div class="member-input-group">
+                            <input type="text" name="member1Name" placeholder="车头1玩家名称">
+                            <input type="number" name="member1Power" step="0.01" placeholder="战力（万亿）">
+                        </div>
+                        <div class="member-input-group">
+                            <input type="text" name="member2Name" placeholder="车头2玩家名称">
+                            <input type="number" name="member2Power" step="0.01" placeholder="战力（万亿）">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">提交数据</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 提示信息 -->
+    <div class="toast" id="toast"></div>
+
+    <!-- JavaScript文件 -->
+    <script src="js/common.js"></script>
+    <script src="js/forms.js"></script>
+    
+    <script>
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 绑定表单提交事件
+            const addForm = document.getElementById('addForm');
+            if (addForm) {
+                addForm.addEventListener('submit', window.AllianceForms.handleAddForm);
+            }
+        });
+    </script>
+</body>
+</html>

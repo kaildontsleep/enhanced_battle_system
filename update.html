@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>更新妖盟数据 - 鲸鱼联盟系统</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
+    <!-- 样式文件 -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="connection-status" id="connectionStatus">
+            连接中...
+        </div>
+
+        <div class="admin-status">
+            <span id="adminInfo">未登录</span>
+            <button class="admin-btn" id="adminBtn">管理员登录</button>
+        </div>
+
+        <div class="header">
+            <h1>寻道大千鲸鱼联盟战力展示与外交系统</h1>
+            <p>更新妖盟战力数据</p>
+        </div>
+
+        <div class="nav-buttons" id="navButtons">
+            <!-- 导航按钮将通过JS动态生成 -->
+        </div>
+
+        <div class="form-container">
+            <a href="index.html" class="back-btn">← 返回主页</a>
+            
+            <div class="form-header">
+                <h2>🔄 更新妖盟数据</h2>
+            </div>
+
+            <div class="form-info">
+                <strong>说明：</strong>此功能用于更新已存在的妖盟数据。选择山头和妖盟后，可以更新妖盟关系、总战力和车头信息。
+                <br><strong>注意：修改后需要管理员审核才会生效</strong>
+            </div>
+
+            <form id="updateForm">
+                <div class="form-group">
+                    <label>选择山头 *</label>
+                    <select name="mountain" id="updateMountain" required>
+                        <option value="">请选择山头</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>选择妖盟 *</label>
+                    <select name="alliance" id="updateAlliance" required>
+                        <option value="">请先选择山头</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>妖盟关系 *</label>
+                    <select name="relation" id="updateRelation" required>
+                        <option value="">请选择联盟关系</option>
+                        <option value="green">联盟（绿色）</option>
+                        <option value="orange">敌对（橙色）</option>
+                        <option value="blue">中立（蓝色）</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>妖盟总战力（万亿）*</label>
+                    <input type="number" id="updateTotalPower" name="totalPower" step="0.01" placeholder="例如：33.88" required>
+                </div>
+
+                <div class="form-group">
+                    <label>车头信息（选填）</label>
+                    <div class="member-inputs">
+                        <div class="member-input-group">
+                            <input type="text" id="updateMember1Name" name="member1Name" placeholder="车头1玩家名称">
+                            <input type="number" id="updateMember1Power" name="member1Power" step="0.01" placeholder="战力（万亿）">
+                        </div>
+                        <div class="member-input-group">
+                            <input type="text" id="updateMember2Name" name="member2Name" placeholder="车头2玩家名称">
+                            <input type="number" id="updateMember2Power" name="member2Power" step="0.01" placeholder="战力（万亿）">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">提交修改</button>
+                <button type="button" class="delete-btn" onclick="window.AllianceForms.deleteAlliance()">删除此妖盟</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 提示信息 -->
+    <div class="toast" id="toast"></div>
+
+    <!-- JavaScript文件 -->
+    <script src="js/common.js"></script>
+    <script src="js/forms.js"></script>
+    
+    <script>
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 监听数据更新事件
+            window.addEventListener('allianceDataUpdated', () => {
+                window.AllianceForms.loadMountains();
+                window.AllianceForms.loadFromURLParams();
+            });
+            
+            // 绑定表单提交事件
+            const updateForm = document.getElementById('updateForm');
+            if (updateForm) {
+                updateForm.addEventListener('submit', window.AllianceForms.handleUpdateForm);
+            }
+            
+            // 绑定选择变化事件
+            const mountainSelect = document.getElementById('updateMountain');
+            const allianceSelect = document.getElementById('updateAlliance');
+            
+            if (mountainSelect) {
+                mountainSelect.addEventListener('change', window.AllianceForms.loadAlliances);
+            }
+            
+            if (allianceSelect) {
+                allianceSelect.addEventListener('change', window.AllianceForms.loadAllianceData);
+            }
+        });
+    </script>
+</body>
+</html>
