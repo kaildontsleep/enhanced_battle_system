@@ -79,7 +79,7 @@ function updateStats(filteredData) {
         html += `
             <div class="stat-item blue">
                 <span class="icon">🕊️</span>
-                <span class="label">中立：</span>
+                <span class="label">合作：</span>
                 <span class="value">${blueCount}个</span>
             </div>
         `;
@@ -139,7 +139,7 @@ function renderData(filterMountain = 'all', filterType = 'all') {
         groupedData[mountain].forEach(alliance => {
             const typeClass = `type-${alliance.relation}`;
             const relationText = alliance.relation === 'green' ? '联盟' : 
-                                alliance.relation === 'orange' ? '敌对' : '中立';
+                                alliance.relation === 'orange' ? '敌对' : '合作';
             
             // 格式化更新时间
             const updateTimeText = alliance.lastUpdated ? 

@@ -94,7 +94,7 @@ function updateStats() {
         'all': '全部',
         'green': '联盟',
         'orange': '敌对',
-        'blue': '中立'
+        'blue': '合作'
     };
     if (currentFilterEl) {
         currentFilterEl.textContent = filterNames[currentFilter] || '全部';
@@ -284,7 +284,7 @@ function getRelationText(relation) {
     const relationMap = {
         'green': '联盟',
         'orange': '敌对',
-        'blue': '中立'
+        'blue': '合作'
     };
     return relationMap[relation] || '未知';
 }

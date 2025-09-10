@@ -91,7 +91,7 @@ async function loadReviewData() {
         const relationText = {
             'green': '联盟',
             'orange': '敌对',
-            'blue': '中立'
+            'blue': '合作'
         }[item.relation] || '未知';
 
         html += `
