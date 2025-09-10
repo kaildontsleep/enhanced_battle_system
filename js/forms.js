@@ -276,52 +276,210 @@ function hideHelperDropdown(dropdown) {
     }
 }
 
-// 从URL参数加载数据 - 增强版本
+// 从URL参数加载数据 - 修复版本，增加调试和重试机制
 function loadFromURLParams() {
     const urlParams = new URLSearchParams(window.location.search);
     const mountain = urlParams.get('mountain');
     const alliance = urlParams.get('alliance');
     
+    console.log('loadFromURLParams called with:', { mountain, alliance });
+    
     if (mountain && alliance) {
-        // 查找对应的数据
-        const data = window.allianceSystem.allianceData.find(item => 
-            item.mountain === mountain && item.alliance === alliance
-        );
-        
-        if (data) {
-            // 填充表单数据
-            document.getElementById('updateMountain').value = data.mountain || '';
-            document.getElementById('updateAlliance').value = data.alliance || '';
-            document.getElementById('updateRelation').value = data.relation || '';
-            document.getElementById('updateTotalPower').value = data.totalPower || '';
+        // 添加重试机制，等待数据加载完成
+        function findDataWithRetry(attempt = 1, maxAttempts = 10) {
+            console.log(`查找数据尝试 ${attempt}/${maxAttempts}`);
+            console.log('当前 allianceData 长度:', window.allianceSystem?.allianceData?.length || 0);
+            console.log('当前 allianceData:', window.allianceSystem?.allianceData);
             
-            // 填充车头信息
-            document.getElementById('updateMember1Name').value = data.members?.[0]?.name || '';
-            document.getElementById('updateMember1Power').value = data.members?.[0]?.power || '';
-            document.getElementById('updateMember2Name').value = data.members?.[1]?.name || '';
-            document.getElementById('updateMember2Power').value = data.members?.[1]?.power || '';
-            
-            // 存储原始数据
-            document.getElementById('originalMountainValue').value = data.mountain;
-            document.getElementById('originalAllianceValue').value = data.alliance;
-            
-            // 显示当前数据信息
-            const infoDiv = document.getElementById('currentDataInfo');
-            if (infoDiv) {
-                document.getElementById('originalMountain').textContent = data.mountain;
-                document.getElementById('originalAlliance').textContent = data.alliance;
-                document.getElementById('originalUpdateTime').textContent = 
-                    data.lastUpdated ? window.AllianceUtils.formatDate(data.lastUpdated) : '未知';
-                infoDiv.style.display = 'block';
+            // 检查数据是否已加载
+            if (!window.allianceSystem || !window.allianceSystem.allianceData) {
+                console.log('allianceSystem 或 allianceData 未初始化，等待中...');
+                if (attempt < maxAttempts) {
+                    setTimeout(() => findDataWithRetry(attempt + 1, maxAttempts), 1000);
+                    return;
+                } else {
+                    console.error('数据加载超时');
+                    window.AllianceUtils.showToast('数据加载超时，请稍后重试', 'error');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 2000);
+                    return;
+                }
             }
-        } else {
-            window.AllianceUtils.showToast('未找到指定的妖盟数据', 'error');
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 2000);
+            
+            // 查找对应的数据
+            console.log('搜索条件:', { mountain, alliance });
+            const data = window.allianceSystem.allianceData.find(item => {
+                console.log('比较:', {
+                    itemMountain: item.mountain,
+                    itemAlliance: item.alliance,
+                    mountainMatch: item.mountain === mountain,
+                    allianceMatch: item.alliance === alliance
+                });
+                return item.mountain === mountain && item.alliance === alliance;
+            });
+            
+            console.log('找到的数据:', data);
+            
+            if (data) {
+                console.log('数据找到，开始填充表单');
+                fillFormData(data, mountain, alliance);
+            } else {
+                console.log('未找到数据，当前数据列表:');
+                window.allianceSystem.allianceData.forEach((item, index) => {
+                    console.log(`${index}: ${item.mountain} - ${item.alliance}`);
+                });
+                
+                if (attempt < maxAttempts) {
+                    console.log('未找到数据，重试中...');
+                    setTimeout(() => findDataWithRetry(attempt + 1, maxAttempts), 1000);
+                } else {
+                    console.error('最终未找到指定的妖盟数据');
+                    window.AllianceUtils.showToast('未找到指定的妖盟数据', 'error');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 2000);
+                }
+            }
         }
+        
+        // 开始查找数据
+        findDataWithRetry();
+    } else {
+        console.log('URL参数不完整:', { mountain, alliance });
     }
 }
+
+function fillFormData(data, mountain, alliance) {
+    try {
+        console.log('开始填充表单数据:', data);
+        
+        // 填充表单数据
+        const elements = {
+            updateMountain: document.getElementById('updateMountain'),
+            updateAlliance: document.getElementById('updateAlliance'),
+            updateRelation: document.getElementById('updateRelation'),
+            updateTotalPower: document.getElementById('updateTotalPower'),
+            updateMember1Name: document.getElementById('updateMember1Name'),
+            updateMember1Power: document.getElementById('updateMember1Power'),
+            updateMember2Name: document.getElementById('updateMember2Name'),
+            updateMember2Power: document.getElementById('updateMember2Power'),
+            originalMountainValue: document.getElementById('originalMountainValue'),
+            originalAllianceValue: document.getElementById('originalAllianceValue')
+        };
+        
+        // 检查必要元素是否存在
+        const missingElements = Object.entries(elements).filter(([key, el]) => !el);
+        if (missingElements.length > 0) {
+            console.warn('缺少以下表单元素:', missingElements.map(([key]) => key));
+        }
+        
+        // 填充基本信息
+        if (elements.updateMountain) elements.updateMountain.value = data.mountain || '';
+        if (elements.updateAlliance) elements.updateAlliance.value = data.alliance || '';
+        if (elements.updateRelation) elements.updateRelation.value = data.relation || '';
+        if (elements.updateTotalPower) elements.updateTotalPower.value = data.totalPower || '';
+        
+        // 填充车头信息
+        if (elements.updateMember1Name) elements.updateMember1Name.value = data.members?.[0]?.name || '';
+        if (elements.updateMember1Power) elements.updateMember1Power.value = data.members?.[0]?.power || '';
+        if (elements.updateMember2Name) elements.updateMember2Name.value = data.members?.[1]?.name || '';
+        if (elements.updateMember2Power) elements.updateMember2Power.value = data.members?.[1]?.power || '';
+        
+        // 存储原始数据
+        if (elements.originalMountainValue) elements.originalMountainValue.value = data.mountain;
+        if (elements.originalAllianceValue) elements.originalAllianceValue.value = data.alliance;
+        
+        // 显示当前数据信息
+        const infoDiv = document.getElementById('currentDataInfo');
+        if (infoDiv) {
+            const originalMountainEl = document.getElementById('originalMountain');
+            const originalAllianceEl = document.getElementById('originalAlliance');
+            const originalUpdateTimeEl = document.getElementById('originalUpdateTime');
+            
+            if (originalMountainEl) originalMountainEl.textContent = data.mountain;
+            if (originalAllianceEl) originalAllianceEl.textContent = data.alliance;
+            if (originalUpdateTimeEl) {
+                originalUpdateTimeEl.textContent = data.lastUpdated ? 
+                    window.AllianceUtils.formatDate(data.lastUpdated) : '未知';
+            }
+            infoDiv.style.display = 'block';
+        }
+        
+        console.log('表单数据填充完成');
+        window.AllianceUtils.showToast('数据加载成功', 'success');
+        
+    } catch (error) {
+        console.error('填充表单数据时出错:', error);
+        window.AllianceUtils.showToast('数据填充失败', 'error');
+    }
+}
+
+function fillFormData(data, mountain, alliance) {
+    try {
+        console.log('开始填充表单数据:', data);
+        
+        // 填充表单数据
+        const elements = {
+            updateMountain: document.getElementById('updateMountain'),
+            updateAlliance: document.getElementById('updateAlliance'),
+            updateRelation: document.getElementById('updateRelation'),
+            updateTotalPower: document.getElementById('updateTotalPower'),
+            updateMember1Name: document.getElementById('updateMember1Name'),
+            updateMember1Power: document.getElementById('updateMember1Power'),
+            updateMember2Name: document.getElementById('updateMember2Name'),
+            updateMember2Power: document.getElementById('updateMember2Power'),
+            originalMountainValue: document.getElementById('originalMountainValue'),
+            originalAllianceValue: document.getElementById('originalAllianceValue')
+        };
+        
+        // 检查必要元素是否存在
+        const missingElements = Object.entries(elements).filter(([key, el]) => !el);
+        if (missingElements.length > 0) {
+            console.warn('缺少以下表单元素:', missingElements.map(([key]) => key));
+        }
+        
+        // 填充基本信息
+        if (elements.updateMountain) elements.updateMountain.value = data.mountain || '';
+        if (elements.updateAlliance) elements.updateAlliance.value = data.alliance || '';
+        if (elements.updateRelation) elements.updateRelation.value = data.relation || '';
+        if (elements.updateTotalPower) elements.updateTotalPower.value = data.totalPower || '';
+        
+        // 填充车头信息
+        if (elements.updateMember1Name) elements.updateMember1Name.value = data.members?.[0]?.name || '';
+        if (elements.updateMember1Power) elements.updateMember1Power.value = data.members?.[0]?.power || '';
+        if (elements.updateMember2Name) elements.updateMember2Name.value = data.members?.[1]?.name || '';
+        if (elements.updateMember2Power) elements.updateMember2Power.value = data.members?.[1]?.power || '';
+        
+        // 存储原始数据
+        if (elements.originalMountainValue) elements.originalMountainValue.value = data.mountain;
+        if (elements.originalAllianceValue) elements.originalAllianceValue.value = data.alliance;
+        
+        // 显示当前数据信息
+        const infoDiv = document.getElementById('currentDataInfo');
+        if (infoDiv) {
+            const originalMountainEl = document.getElementById('originalMountain');
+            const originalAllianceEl = document.getElementById('originalAlliance');
+            const originalUpdateTimeEl = document.getElementById('originalUpdateTime');
+            
+            if (originalMountainEl) originalMountainEl.textContent = data.mountain;
+            if (originalAllianceEl) originalAllianceEl.textContent = data.alliance;
+            if (originalUpdateTimeEl) {
+                originalUpdateTimeEl.textContent = data.lastUpdated ? 
+                    window.AllianceUtils.formatDate(data.lastUpdated) : '未知';
+            }
+            infoDiv.style.display = 'block';
+        }
+        
+        console.log('表单数据填充完成');
+        window.AllianceUtils.showToast('数据加载成功', 'success');
+        
+    } catch (error) {
+        console.error('填充表单数据时出错:', error);
+        window.AllianceUtils.showToast('数据填充失败', 'error');
+    }
+}
+
 
 // 删除妖盟 - 使用原始数据
 async function deleteAlliance() {

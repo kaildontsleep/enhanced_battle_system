@@ -188,10 +188,13 @@
     <script src="js/forms.js"></script>
     
     <script>
-        // 页面初始化
+        // 页面初始化 - 修复版本
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('Update page DOM loaded');
+            
             // 监听数据更新事件
             window.addEventListener('allianceDataUpdated', () => {
+                console.log('allianceDataUpdated event received');
                 window.AllianceForms.initUpdateHelpers();
                 window.AllianceForms.loadFromURLParams();
             });
@@ -202,11 +205,38 @@
                 updateForm.addEventListener('submit', window.AllianceForms.handleUpdateForm);
             }
             
-            // 延迟初始化，确保数据已加载
-            setTimeout(() => {
-                window.AllianceForms.initUpdateHelpers();
-                window.AllianceForms.loadFromURLParams();
-            }, 1000);
+            // 改进的初始化逻辑 - 等待数据系统准备完成
+            function initWhenReady(attempt = 1, maxAttempts = 15) {
+                console.log(`初始化尝试 ${attempt}/${maxAttempts}`);
+                
+                // 检查必要的系统是否已加载
+                if (window.AllianceForms && window.allianceSystem && window.AllianceUtils) {
+                    console.log('系统组件已加载，开始初始化');
+                    
+                    // 初始化输入助手
+                    window.AllianceForms.initUpdateHelpers();
+                    
+                    // 加载URL参数数据
+                    window.AllianceForms.loadFromURLParams();
+                    
+                } else {
+                    console.log('系统组件未完全加载，等待中...', {
+                        AllianceForms: !!window.AllianceForms,
+                        allianceSystem: !!window.allianceSystem,
+                        AllianceUtils: !!window.AllianceUtils
+                    });
+                    
+                    if (attempt < maxAttempts) {
+                        setTimeout(() => initWhenReady(attempt + 1, maxAttempts), 500);
+                    } else {
+                        console.error('系统初始化超时');
+                        window.AllianceUtils && window.AllianceUtils.showToast('系统初始化失败，请刷新页面', 'error');
+                    }
+                }
+            }
+            
+            // 开始初始化
+            initWhenReady();
         });
     </script>
 </body>

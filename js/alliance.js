@@ -182,12 +182,37 @@ function renderData(filterMountain = 'all', filterType = 'all') {
     container.innerHTML = html;
 }
 
-// 编辑妖盟
+// 编辑妖盟 - 改进版本，增加调试和验证
 function editAlliance(mountain, alliance) {
+    console.log('editAlliance called with:', { mountain, alliance });
+    
+    // 验证参数
+    if (!mountain || !alliance) {
+        console.error('editAlliance: 缺少必要参数', { mountain, alliance });
+        window.AllianceUtils.showToast('参数错误，无法编辑', 'error');
+        return;
+    }
+    
+    // 验证数据是否存在
+    const exists = window.allianceSystem.allianceData.find(item => 
+        item.mountain === mountain && item.alliance === alliance
+    );
+    
+    if (!exists) {
+        console.error('editAlliance: 未找到指定的妖盟数据', { mountain, alliance });
+        console.log('当前可用数据:', window.allianceSystem.allianceData);
+        window.AllianceUtils.showToast('未找到指定的妖盟数据', 'error');
+        return;
+    }
+    
+    console.log('找到数据，准备跳转到编辑页面:', exists);
+    
     // 跳转到更新页面并传递参数
     const url = new URL('update.html', window.location.origin);
     url.searchParams.set('mountain', mountain);
     url.searchParams.set('alliance', alliance);
+    
+    console.log('跳转URL:', url.toString());
     window.location.href = url.toString();
 }
 
